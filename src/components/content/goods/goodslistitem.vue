@@ -1,6 +1,6 @@
 <template>
-  <div class="goods-item">
-      <img :src="goodsitem.show.img"  @load="imgeload">
+  <div class="goods-item" @click="itemclick">
+      <img v-lazy="showimage"  @load="imgeload">
       <div class="goods-info">
           <span class="price">{{goodsitem.price}}</span>
           <span class="collect">{{goodsitem.cfav}}</span>
@@ -18,12 +18,20 @@ props:{
         }
     }
 },
+computed:{
+showimage(){
+  if(this.goodsitem.show==undefined){ return this.goodsitem.image}
+  else{return this.goodsitem.show.img}
+  // return this.goodsitem.image || this.goodsitem.show.img 
+}
+},
 methods:{
+  itemclick(){
+    this.$router.push('./detail/'+this.goodsitem.iid)
+  },
   imgeload(){
-   console.log('--');
-   
     this.$bus.$emit('itemimgload')
-    
+
   }
 }
 }

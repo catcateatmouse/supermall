@@ -3,18 +3,25 @@
  <navbar class="home-nav">
    <div slot="center">购物车</div>
  </navbar>
- 
+ <tabcontrol :titles="titles"
+  class="tabcontrol"
+  v-show="isfixed"
+  @tabclick="tabclick" 
+  ref="tabcontrol1"></tabcontrol>
  <sscroll class="content" 
  ref="scroll" 
  :probetype="3" 
  @scroll="scroll" 
  :pull-up-load="true"
   @pullingUp="pullingUp">
-   <homeswiper :banners="banners"></homeswiper>
+   <homeswiper :banners="banners" @swiperimgeload="swiperimgeload"></homeswiper>
  <recommendview :recommends="recommends"></recommendview>
  <featureview></featureview>
- <tabcontrol :titles="titles" class="tabcontrol" @tabclick="tabclick"></tabcontrol>
- <goodslist :goods="showgoods"></goodslist>
+ <tabcontrol :titles="titles"
+  
+  @tabclick="tabclick" 
+  ref="tabcontrol2"></tabcontrol>
+ <goodslist :goods="showgoods"/>
  
  <ul>
    <li>ddd</li>
@@ -40,6 +47,8 @@
  //调用封装好的滚动组件
  import sscroll from '../../components/common/scroll/scroll'
  import backtop from '../../components/content/backtop/backtop'
+ 
+ import {itemListenerMixin} from '../../common/mixin'
 export default {
 name:"home",
 components:{
@@ -55,6 +64,9 @@ components:{
 
 data(){
   return{
+    scrolly:0,
+    isfixed:false,
+    taboffsettop: 0,
     banners:null,
     recommends:null,
     currenttype:'pop',
@@ -64,14 +76,27 @@ data(){
       'new':{page:0,list:[]},
       'sell':{page:0,list:[]},
     },
-    isshow:false
+    isshow:false,
+    
   }
 },
 computed:{
   showgoods(){
     return this.goods[this.currenttype].list
   }
+  
 },
+activated(){
+  this.$refs.scroll.refresh();
+   this.$refs.scroll.scrollto(0,this.scrolly,0)
+   
+    },
+deactivated(){
+  this.scrolly = this.$refs.scroll.getscrolly()
+this.$bus.$off('itemimgload',this.itemimglistener
+  )
+
+  },
 created(){
   
   this.gethomemultidata(),
@@ -80,17 +105,26 @@ created(){
     this.gethomegoods('sell')
 },
 mounted(){
- 
-this.$bus.$on('itemimgload',()=>{this.$refs.scroll.refresh();
-  })
+
+
 },
+mixins:[itemListenerMixin],
 methods:{
+  swiperimgeload(){   this.taboffsettop =  this.$refs.tabcontrol2.$el.offsetTop
+  },
+ //上啦加载更多
   pullingUp(){this.gethomegoods(this.currenttype);
   this.$refs.scroll.finishPullUp()
   },
   scroll(position){
+    // this.scrolly = position.y
+    //决定backtop是否要显示
 if(-position.y>1000){this.isshow=true}else{this.isshow=false}
+//决定tabcontrol是否吸顶
+// console.log(position);
+this.isfixed = -position.y>this.taboffsettop
  },
+ //监听tab事件点击
   tabclick(index){
     // console.log(index);
     switch(index){
@@ -105,6 +139,8 @@ if(-position.y>1000){this.isshow=true}else{this.isshow=false}
         break
 
     }
+    this.$refs.tabcontrol2.currentindex =index;
+    this.$refs.tabcontrol1.currentindex =index;
   },
   backclick(){
 // console.log(this.$refs.scroll);
@@ -123,7 +159,7 @@ this.$refs.scroll.scrollto(0,0)
 // console.log(res.data);
 this.goods[type].list.push(...res.data.data.list);
 this.goods[type].page=this.goods[type].page + 1;
-console.log(this.goods[type].page);
+// console.log(this.goods[type].page);
 
  })
   }
@@ -141,16 +177,16 @@ console.log(this.goods[type].page);
 .home-nav{
   background-color: var(--color-tint);
   color: white;
-  position: fixed;
+  /* position: fixed;
   left: 0;
   right: 0;
   top:0;
-  z-index:9;
+  z-index:9; */
   
 }
 .tabcontrol{
   /* position: sticky; */
-  top: 44px;
+  position: relative;
   z-index: 9;
 }
 /* .content{
@@ -166,4 +202,11 @@ console.log(this.goods[type].page);
   left: 0;
   right: 0;
 }
+/* .fixed{
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 44px;
+  
+} */
 </style>
